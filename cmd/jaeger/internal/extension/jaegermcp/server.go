@@ -162,7 +162,14 @@ func (s *server) registerTools() {
 		Description: "Get full details for all spans with error status.",
 	}, getTraceErrorsHandler)
 
-	// Get critical path tool
+	// Get trace topology tool
+	getTraceTopologyHandler := handlers.NewGetTraceTopologyHandler(s.queryAPI)
+	mcp.AddTool(s.mcpServer, &mcp.Tool{
+		Name:        "get_trace_topology",
+		Description: "Get the structural tree of a trace showing parent-child relationships, timing, and error locations. Does NOT return attributes or logs.",
+	}, getTraceTopologyHandler)
+
+  // Get critical path tool
 	getCriticalPathHandler := handlers.NewGetCriticalPathHandler(s.queryAPI)
 	mcp.AddTool(s.mcpServer, &mcp.Tool{
 		Name:        "get_critical_path",
