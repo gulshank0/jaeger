@@ -102,7 +102,7 @@ func (s *server) Start(ctx context.Context, host component.Host) error {
 	})
 
 	s.httpServer = &http.Server{
-		Handler:           mux,
+		Handler:           corsMiddleware(mux),
 		ReadHeaderTimeout: 30 * time.Second,
 	}
 
@@ -135,6 +135,13 @@ func (s *server) Shutdown(ctx context.Context) error {
 
 // registerTools registers all MCP tools with the server.
 func (s *server) registerTools() {
+	// Get services tool (at the top - required for search_traces)
+	getServicesHandler := handlers.NewGetServicesHandler(s.queryAPI)
+	mcp.AddTool(s.mcpServer, &mcp.Tool{
+		Name:        "get_services",
+		Description: "List available service names. Use this first to discover valid service names for search_traces.",
+	}, getServicesHandler)
+
 	// Health check tool
 	mcp.AddTool(s.mcpServer, &mcp.Tool{
 		Name:        "health",
@@ -196,4 +203,23 @@ func (s *server) healthTool(
 		Server:  s.config.ServerName,
 		Version: s.config.ServerVersion,
 	}, nil
+}
+
+// corsMiddleware wraps an http.Handler to add CORS headers.
+// This is required for browser-based MCP clients like the MCP Inspector.
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Accept, Mcp-Session-Id, Mcp-Protocol-Version, Last-Event-ID")
+		w.Header().Set("Access-Control-Expose-Headers", "Mcp-Session-Id")
+
+		// Handle preflight requests
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }
