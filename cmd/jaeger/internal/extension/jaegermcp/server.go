@@ -176,7 +176,7 @@ func (s *server) registerTools() {
 		Description: "Get the structural tree of a trace showing parent-child relationships, timing, and error locations. Does NOT return attributes or logs.",
 	}, getTraceTopologyHandler)
 
-  // Get critical path tool
+	// Get critical path tool
 	getCriticalPathHandler := handlers.NewGetCriticalPathHandler(s.queryAPI)
 	mcp.AddTool(s.mcpServer, &mcp.Tool{
 		Name:        "get_critical_path",
